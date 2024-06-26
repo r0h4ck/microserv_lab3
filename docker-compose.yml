@@ -1,0 +1,91 @@
+version: "3"
+
+services:
+  facade-service:
+    build:
+      context: ./facade-service
+    ports:
+      - "9000:9000"
+    depends_on:
+      - logging-service-1
+      - logging-service-2
+      - logging-service-3
+      - messages-service
+    networks:
+      - hazelcast-cluster
+
+  hazelcast-1:
+    image: hazelcast/hazelcast:latest
+    environment:
+      HZ_NETWORK_PUBLICADDRESS: hazelcast-1
+    ports:
+      - "5701:5701"
+    networks:
+      - hazelcast-cluster
+
+  hazelcast-2:
+    image: hazelcast/hazelcast:latest
+    environment:
+      HZ_NETWORK_PUBLICADDRESS: hazelcast-2
+      HZ_NETWORK_JOIN: hazelcast-1
+    ports:
+      - "5702:5701"
+    networks:
+      - hazelcast-cluster
+
+  hazelcast-3:
+    image: hazelcast/hazelcast:latest
+    environment:
+      HZ_NETWORK_PUBLICADDRESS: hazelcast-3
+      HZ_NETWORK_JOIN: hazelcast-1
+    ports:
+      - "5703:5701"
+    networks:
+      - hazelcast-cluster
+
+  logging-service-1:
+    build:
+      context: ./logging-service
+    environment:
+      HAZELCAST_NODE_ADDRESS: "hazelcast-1:5701"
+    depends_on:
+      - hazelcast-1
+    ports:
+      - "9001:9001"
+    networks:
+      - hazelcast-cluster
+
+  logging-service-2:
+    build:
+      context: ./logging-service
+    environment:
+      HAZELCAST_NODE_ADDRESS: "hazelcast-2:5701"
+    depends_on:
+      - hazelcast-2
+    ports:
+      - "9002:9001"
+    networks:
+      - hazelcast-cluster
+
+  logging-service-3:
+    build:
+      context: ./logging-service
+    environment:
+      HAZELCAST_NODE_ADDRESS: "hazelcast-3:5701"
+    depends_on:
+      - hazelcast-3
+    ports:
+      - "9003:9001"
+    networks:
+      - hazelcast-cluster
+
+  messages-service:
+    build:
+      context: ./messages-service
+    ports:
+      - "9004:9002"
+    networks:
+      - hazelcast-cluster
+
+networks:
+  hazelcast-cluster:
